@@ -1,0 +1,42 @@
+pragma solidity ^0.4.11;
+
+contract Lottery {
+    address owner;
+    mapping (address => uint) userBet;
+    mapping (uint => address) userId;
+    uint numUsers = 0;
+    uint totalBets = 0;
+    
+    modifier isOwner() {
+        require(msg.sender == owner);
+        _;
+    }
+    
+    function Lottery() public {
+        owner = msg.sender;
+    }
+
+    function Bet() public payable {
+        if(msg.value > 0) {
+            if (userBet[msg.sender] == 0) { //new bet 
+                userId[numUsers] = msg.sender;
+                numUsers++;
+            }
+            
+            userBet[msg.sender] += msg.value;
+            totalBets += msg.value;
+        }
+    }
+    
+    function EndLottery() isOwner() public returns(uint) {
+        uint winner = uint(block.blockhash(block.number-1)) % totalBets;
+        uint sum = 0;
+        for(uint i = 0; i <= numUsers; i++) {
+            sum += userBet[userId[i]];
+            if(sum >= winner) {
+                selfdestruct(userId[i]);
+                return winner;
+            }
+        }
+    }
+}
